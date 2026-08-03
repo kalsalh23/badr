@@ -31,4 +31,4 @@ pnpm-debug.log*
 *.sw?
 
 # Verce
-.vercel/
+.vercel/dist.zip
