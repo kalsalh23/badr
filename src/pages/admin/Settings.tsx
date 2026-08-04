@@ -1,25 +1,45 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MapPin, Save, Shield } from 'lucide-react'
 import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
+import Spinner from '@/components/ui/Spinner'
 import { CITY_CENTER, CITY_NAME, MUNICIPALITY_NAME, PLATFORM_NAME } from '@/lib/constants'
 import MapView from '@/components/map/Map'
+import { fetchSystemSettings, saveSystemSettings } from '@/services/adminService'
 
 export default function Settings() {
-  const [contacts, setContacts] = useState({
-    phone: '+963 33 000000',
-    email: 'info@taybet.gov.sy',
-    address: 'مدينة طيبة الإمام، محافظة حماة، سوريا',
-  })
-  const [saved, setSaved] = useState(false)
+  const [contacts, setContacts] = useState({ phone: '', email: '', address: '' })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [status, setStatus] = useState<'idle' | 'saved' | 'error'>('idle')
+  const [error, setError] = useState('')
 
-  function handleSave(e: React.FormEvent) {
+  useEffect(() => {
+    fetchSystemSettings()
+      .then(setContacts)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+    setSaving(true)
+    setStatus('idle')
+    setError('')
+    try {
+      await saveSystemSettings(contacts)
+      setStatus('saved')
+    } catch (err) {
+      setStatus('error')
+      setError(err instanceof Error ? err.message : 'تعذر حفظ الإعدادات')
+    } finally {
+      setSaving(false)
+    }
   }
+
+  if (loading) return <Spinner className="h-10 w-10" />
 
   return (
     <div className="space-y-8">
@@ -28,8 +48,11 @@ export default function Settings() {
         <p className="text-sm text-ink-secondary">معلومات المنصة وبيانات التواصل.</p>
       </div>
 
-      {saved && (
+      {status === 'saved' && (
         <Alert tone="success">تم حفظ الإعدادات بنجاح.</Alert>
+      )}
+      {status === 'error' && (
+        <Alert tone="error">{error}</Alert>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -63,9 +86,9 @@ export default function Settings() {
               value={contacts.address}
               onChange={(e) => setContacts({ ...contacts, address: e.target.value })}
             />
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" disabled={saving}>
               <Save className="h-4 w-4" />
-              حفظ الإعدادات
+              {saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}
             </Button>
           </form>
         </Card>

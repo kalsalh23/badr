@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, ClipboardList, Search } from 'lucide-react'
-import { fetchAdminStats, fetchStatuses } from '@/services/adminService'
+import { ArrowLeft, ChevronLeft, ChevronRight, ClipboardList, Search } from 'lucide-react'
+import { fetchReportsPage, fetchStatuses } from '@/services/adminService'
 import type { Report, ReportStatus } from '@/types'
 import Card from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
@@ -9,46 +9,53 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { ADMIN_BASE, SEVERITY_META } from '@/lib/constants'
 import { formatDateTime } from '@/utils/format'
 
+const PAGE_SIZE = 15
+
 export default function ReportsAdmin() {
   const [reports, setReports] = useState<Report[]>([])
   const [statuses, setStatuses] = useState<ReportStatus[]>([])
-  const [loading, setLoading] = useState(true)
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([fetchAdminStats(), fetchStatuses()])
-      .then(([r, s]) => {
-        setReports(r)
-        setStatuses(s)
+    fetchStatuses()
+      .then(setStatuses)
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    setLoading(true)
+    fetchReportsPage(page, PAGE_SIZE, {
+      search,
+      status_id: statusFilter === 'all' ? undefined : statusFilter,
+    })
+      .then(({ reports, total }) => {
+        setReports(reports)
+        setTotal(total)
       })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }, [page, search, statusFilter])
 
-  const filtered = useMemo(() => {
-    return reports.filter((r) => {
-      const matchesSearch =
-        !search ||
-        r.title.includes(search) ||
-        r.report_number.includes(search) ||
-        r.citizen_name.includes(search)
-      const matchesStatus =
-        statusFilter === 'all' || r.status_id === statusFilter
-      return matchesSearch && matchesStatus
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reports, search, statusFilter])
-
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const statusById = (id: string) => statuses.find((s) => s.id === id)
 
-  if (loading) return <Spinner className="h-10 w-10" />
+  function goToPage(p: number) {
+    if (p < 0 || p >= totalPages) return
+    setPage(p)
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-black text-ink">إدارة البلاغات</h1>
-        <p className="text-sm text-ink-secondary">عرض وإدارة جميع بلاغات المواطنين.</p>
+        <p className="text-sm text-ink-secondary">
+          عرض وإدارة جميع بلاغات المواطنين.
+          {total > 0 && <span className="mr-2 font-bold text-brand">({total} بلاغ)</span>}
+        </p>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -56,14 +63,20 @@ export default function ReportsAdmin() {
           <Search className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted" />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value)
+              setPage(0)
+            }}
             placeholder="بحث بالرقم، الاسم، أو العنوان..."
             className="input pr-10"
           />
         </div>
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value)
+            setPage(0)
+          }}
           className="input sm:w-56"
         >
           <option value="all">جميع الحالات</option>
@@ -76,7 +89,11 @@ export default function ReportsAdmin() {
       </div>
 
       <Card>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Spinner className="h-10 w-10" />
+          </div>
+        ) : reports.length === 0 ? (
           <p className="flex flex-col items-center gap-2 py-12 text-ink-secondary">
             <ClipboardList className="h-10 w-10 text-gold" />
             لا توجد بلاغات مطابقة.
@@ -96,7 +113,7 @@ export default function ReportsAdmin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand/5">
-                {filtered.map((r) => {
+                {reports.map((r) => {
                   const st = statusById(r.status_id)
                   const sv = SEVERITY_META[r.severity]
                   return (
@@ -133,6 +150,34 @@ export default function ReportsAdmin() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {!loading && total > 0 && (
+          <div className="mt-4 flex items-center justify-between border-t border-brand/10 pt-4">
+            <p className="text-xs text-ink-secondary">
+              صفحة {page + 1} من {totalPages}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => goToPage(page - 1)}
+                disabled={page === 0}
+                className="flex h-9 w-9 items-center justify-center rounded-card border border-brand/15 text-brand transition hover:bg-brand/5 disabled:opacity-40"
+                aria-label="السابق"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => goToPage(page + 1)}
+                disabled={page >= totalPages - 1}
+                className="flex h-9 w-9 items-center justify-center rounded-card border border-brand/15 text-brand transition hover:bg-brand/5 disabled:opacity-40"
+                aria-label="التالي"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         )}
       </Card>

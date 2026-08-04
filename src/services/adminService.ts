@@ -1,11 +1,53 @@
 import { supabase } from '@/lib/supabase'
 import type { Attachment, Report, ReportStatus, ReportUpdate, ReportType } from '@/types'
 
-export async function fetchReports(): Promise<Report[]> {
+export interface PaginatedReports {
+  reports: Report[]
+  total: number
+}
+
+export interface ReportsFilter {
+  search?: string
+  status_id?: string
+}
+
+export async function fetchReportsPage(
+  page: number,
+  pageSize: number,
+  filter?: ReportsFilter
+): Promise<PaginatedReports> {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
+  let query = supabase
+    .from('Reports')
+    .select('*', { count: 'exact' })
+
+  if (filter?.status_id) {
+    query = query.eq('status_id', filter.status_id)
+  }
+
+  if (filter?.search && filter.search.trim()) {
+    const term = filter.search.trim()
+    query = query.or(
+      `title.ilike.*${term}*,report_number.ilike.*${term}*,citizen_name.ilike.*${term}*`
+    )
+  }
+
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(from, to)
+
+  if (error) throw error
+  return { reports: data ?? [], total: count ?? 0 }
+}
+
+export async function fetchLatestReports(limit: number): Promise<Report[]> {
   const { data, error } = await supabase
     .from('Reports')
     .select('*')
     .order('created_at', { ascending: false })
+    .limit(limit)
 
   if (error) throw error
   return data ?? []
@@ -103,9 +145,83 @@ export async function deleteReport(id: string) {
   if (error) throw error
 }
 
-export async function fetchAdminStats() {
-  const reports = await fetchReports()
-  return reports
+export interface AdminStats {
+  total: number
+  new: number
+  in_review: number
+  in_progress: number
+  completed: number
+  closed: number
+  avg_resolution_days: number
+}
+
+export async function fetchAdminStats(): Promise<AdminStats> {
+  const { data, error } = await supabase.rpc('admin_stats')
+  if (error) throw error
+  return data as AdminStats
+}
+
+export interface AdminStatusCount {
+  id: string
+  name: string
+  slug: string
+  color: string
+  count: number
+}
+
+export async function fetchAdminStatusCounts(): Promise<AdminStatusCount[]> {
+  const { data, error } = await supabase.rpc('admin_status_counts')
+  if (error) throw error
+  return data as AdminStatusCount[]
+}
+
+export interface AdminTypeCount {
+  id: string
+  name: string
+  count: number
+}
+
+export async function fetchAdminTypeCounts(): Promise<AdminTypeCount[]> {
+  const { data, error } = await supabase.rpc('admin_type_counts')
+  if (error) throw error
+  return data as AdminTypeCount[]
+}
+
+export interface SystemSettingsData {
+  phone: string
+  email: string
+  address: string
+}
+
+export async function fetchSystemSettings(): Promise<SystemSettingsData> {
+  const { data, error } = await supabase
+    .from('SystemSettings')
+    .select('key, value')
+
+  if (error) throw error
+
+  const map: Record<string, string> = {}
+  for (const row of data ?? []) map[row.key] = row.value
+
+  return {
+    phone: map.phone ?? '',
+    email: map.email ?? '',
+    address: map.address ?? '',
+  }
+}
+
+export async function saveSystemSettings(s: SystemSettingsData): Promise<void> {
+  const rows = [
+    { key: 'phone', value: s.phone },
+    { key: 'email', value: s.email },
+    { key: 'address', value: s.address },
+  ]
+
+  const { error } = await supabase
+    .from('SystemSettings')
+    .upsert(rows, { onConflict: 'key' })
+
+  if (error) throw error
 }
 
 export async function signInAdmin(email: string, password: string) {

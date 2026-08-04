@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BarChart3, ClipboardCheck, Clock, FileText, CheckCircle2, ArrowLeft } from 'lucide-react'
-import { fetchAdminStats, fetchStatuses } from '@/services/adminService'
+import { fetchAdminStats, fetchLatestReports, fetchStatuses } from '@/services/adminService'
+import type { AdminStats } from '@/services/adminService'
 import type { Report, ReportStatus } from '@/types'
 import Card from '@/components/ui/Card'
 import Spinner from '@/components/ui/Spinner'
@@ -17,14 +18,16 @@ function StatusBadge({ statusId, statuses }: { statusId: string; statuses: Repor
 }
 
 export default function Dashboard() {
-  const [reports, setReports] = useState<Report[]>([])
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [latest, setLatest] = useState<Report[]>([])
   const [statuses, setStatuses] = useState<ReportStatus[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([fetchAdminStats(), fetchStatuses()])
-      .then(([r, s]) => {
-        setReports(r)
+    Promise.all([fetchAdminStats(), fetchLatestReports(5), fetchStatuses()])
+      .then(([st, latest, s]) => {
+        setStats(st)
+        setLatest(latest)
         setStatuses(s)
       })
       .catch(() => {})
@@ -32,27 +35,13 @@ export default function Dashboard() {
   }, [])
 
   if (loading) return <Spinner className="h-10 w-10" />
-
-  const bySlug = (slug: string) => {
-    const st = statuses.find((s) => s.slug === slug)
-    if (!st) return 0
-    return reports.filter((r) => r.status_id === st.id).length
-  }
-
-  const avgDays =
-    reports.length > 0
-      ? reports.filter((r) => r.resolved_at).reduce((sum, r) => {
-          const diff = new Date(r.resolved_at!).getTime() - new Date(r.created_at).getTime()
-          return sum + diff / 86400000
-        }, 0) /
-        reports.filter((r) => r.resolved_at).length
-      : 0
+  if (!stats) return null
 
   const cards = [
-    { label: 'إجمالي البلاغات', value: reports.length, icon: FileText, color: '#054239' },
-    { label: 'جديدة', value: bySlug('new'), icon: ClipboardCheck, color: '#B9A779' },
-    { label: 'قيد التنفيذ', value: bySlug('in_review') + bySlug('in_progress'), icon: Clock, color: '#988561' },
-    { label: 'منجزة', value: bySlug('completed'), icon: CheckCircle2, color: '#1E7A4C' },
+    { label: 'إجمالي البلاغات', value: stats.total, icon: FileText, color: '#054239' },
+    { label: 'جديدة', value: stats.new, icon: ClipboardCheck, color: '#B9A779' },
+    { label: 'قيد التنفيذ', value: stats.in_review + stats.in_progress, icon: Clock, color: '#988561' },
+    { label: 'منجزة', value: stats.completed, icon: CheckCircle2, color: '#1E7A4C' },
   ]
 
   return (
@@ -92,9 +81,7 @@ export default function Dashboard() {
           </div>
         </div>
         <p className="text-2xl font-black text-brand">
-          {reports.some((r) => r.resolved_at)
-            ? formatDuration(avgDays)
-            : '—'}
+          {stats.avg_resolution_days > 0 ? formatDuration(stats.avg_resolution_days) : '—'}
         </p>
       </Card>
 
@@ -103,11 +90,11 @@ export default function Dashboard() {
         title="أحدث البلاغات"
         subtitle="آخر البلاغات الواردة"
       >
-        {reports.length === 0 ? (
+        {latest.length === 0 ? (
           <p className="py-6 text-center text-ink-secondary">لا توجد بلاغات بعد.</p>
         ) : (
           <div className="divide-y divide-brand/10">
-            {reports.slice(0, 5).map((report) => (
+            {latest.map((report) => (
               <div key={report.id} className="flex items-center justify-between gap-4 py-3">
                 <div className="min-w-0">
                   <p className="truncate font-bold text-ink">{report.title}</p>
