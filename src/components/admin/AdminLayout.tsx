@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { BarChart3, LayoutDashboard, LogOut, Menu, Settings, Shield, X, ClipboardList } from 'lucide-react'
+import { BarChart3, LayoutDashboard, LogOut, Menu, Settings, Shield, X, ClipboardList, Code2 } from 'lucide-react'
 import { signOutAdmin, getCurrentAdmin } from '@/services/adminService'
-import { ADMIN_BASE } from '@/lib/constants'
+import { ADMIN_BASE, DEVELOPER_NAME, DEVELOPER_PHONE } from '@/lib/constants'
 
 const navItems = [
   { to: `${ADMIN_BASE}`, label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -67,6 +67,15 @@ export default function AdminLayout() {
             </p>
           </div>
         )}
+        <div className="flex items-center gap-2 rounded-xl bg-white/5 px-4 py-3 text-xs text-white/70">
+          <Code2 className="h-4 w-4 shrink-0 text-gold" />
+          <span className="min-w-0">
+            <span className="block font-black text-white">{DEVELOPER_NAME}</span>
+            <a href={`tel:${DEVELOPER_PHONE}`} dir="ltr" className="text-white/70 hover:text-gold">
+              {DEVELOPER_PHONE}
+            </a>
+          </span>
+        </div>
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-warning hover:bg-white/5"

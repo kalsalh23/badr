@@ -5,6 +5,10 @@ export const DEFAULT_ZOOM = 14
 export const CITY_NAME = 'طيبة الإمام'
 export const MUNICIPALITY_NAME = 'مجلس مدينة طيبة الإمام'
 export const PLATFORM_NAME = 'إبلاغ الطيبة'
+export const MEDIA_SPONSOR = 'الراعي الإعلامي صفحة طيبة الامام الرسمية'
+
+export const DEVELOPER_NAME = 'قصي مهند الصالح'
+export const DEVELOPER_PHONE = '0952639157'
 
 export const PHONE_REGEX = /^(?:\+963|00963|0)?9\d{8}$/
 

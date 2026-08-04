@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { ArrowRight, BarChart3, FileText, Info, MapPin, Clock, ClipboardCheck, CheckCircle } from 'lucide-react'
 import { fetchPublicStats, fetchReportLocations } from '@/services/reportService'
 import type { PublicReportLocation, PublicStats } from '@/types'
-import { MUNICIPALITY_NAME, PLATFORM_NAME } from '@/lib/constants'
+import { MUNICIPALITY_NAME, PLATFORM_NAME, MEDIA_SPONSOR } from '@/lib/constants'
 import MapView from '@/components/map/Map'
 import Spinner from '@/components/ui/Spinner'
 import { formatDuration } from '@/utils/format'
@@ -46,7 +46,7 @@ export default function Home() {
       <section className="rounded-card bg-brand p-8 text-center text-white md:p-14">
         <p className="mx-auto mb-4 flex w-fit items-center gap-2 rounded-full bg-white/10 px-4 py-1 text-sm font-bold">
           <span className="h-2 w-2 rounded-full bg-gold" />
-          منصة رسمية تابعة لمجلس مدينة طيبة الإمام
+          {MEDIA_SPONSOR}
         </p>
         <h1 className="text-4xl font-black md:text-6xl">{PLATFORM_NAME}</h1>
         <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/90 md:text-lg">

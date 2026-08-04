@@ -387,6 +387,93 @@ $$;
 grant execute on function public.public_track_report(text, text) to anon, authenticated;
 
 -- ============================================================
+-- إرسال البلاغ وحفظه بشكل آمن (Security Definer ليتجاوز RLS)
+-- السماح بالإدراج مع إرجاع النتيجة دون الحاجة لسياسة SELECT عامة
+-- على جداول Reports / Attachments (وهو سبب فشل إرسال البلاغ سابقاً)
+-- ============================================================
+
+-- إنشاء بلاغ جديد وإرجاع رقمه
+create or replace function public.submit_report(
+  p_citizen_name text,
+  p_citizen_phone text,
+  p_citizen_id text,
+  p_type_id uuid,
+  p_title text,
+  p_description text,
+  p_street text,
+  p_neighborhood text,
+  p_landmark text,
+  p_lat double precision,
+  p_lng double precision
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_status_id uuid;
+  v_id uuid;
+  v_report_number text;
+begin
+  select id into v_status_id from public."ReportStatus" where slug = 'new' limit 1;
+
+  if v_status_id is null then
+    raise exception 'STATUS_NOT_FOUND';
+  end if;
+
+  insert into public."Reports" (
+    citizen_name, citizen_phone, citizen_id, type_id, status_id,
+    title, description, street, neighborhood, landmark,
+    lat, lng, severity, notes, is_resolved
+  ) values (
+    p_citizen_name, p_citizen_phone, p_citizen_id, p_type_id, v_status_id,
+    p_title, p_description, p_street, p_neighborhood, p_landmark,
+    p_lat, p_lng, 'منخفضة', null, false
+  )
+  returning id, report_number into v_id, v_report_number;
+
+  return jsonb_build_object('id', v_id, 'report_number', v_report_number);
+end;
+$$;
+
+grant execute on function public.submit_report(text, text, text, uuid, text, text, text, text, text, double precision, double precision) to anon, authenticated;
+
+-- إضافة مرفق (صورة) إلى بلاغ معيّن وإرجاعه
+create or replace function public.add_attachment(
+  p_report_id uuid,
+  p_url text,
+  p_storage_path text,
+  p_kind text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+  v_url text;
+  v_storage_path text;
+  v_kind text;
+  v_created_at timestamptz;
+begin
+  insert into public."Attachments" (report_id, url, storage_path, kind)
+  values (p_report_id, p_url, p_storage_path, p_kind)
+  returning id, url, storage_path, kind, created_at
+  into v_id, v_url, v_storage_path, v_kind, v_created_at;
+
+  return jsonb_build_object(
+    'id', v_id, 'report_id', p_report_id,
+    'url', v_url, 'storage_path', v_storage_path,
+    'kind', v_kind, 'created_at', v_created_at
+  );
+end;
+$$;
+
+grant execute on function public.add_attachment(uuid, text, text, text) to anon, authenticated;
+
+-- ============================================================
 -- Storage: إنشاء دلو الصور
 -- ============================================================
 insert into storage.buckets (id, name, public)

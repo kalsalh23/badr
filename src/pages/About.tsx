@@ -1,5 +1,5 @@
-import { Landmark, MapPin, Phone, Mail, Shield, Users, Target } from 'lucide-react'
-import { MUNICIPALITY_NAME, PLATFORM_NAME, CITY_CENTER, CITY_NAME } from '@/lib/constants'
+import { Landmark, MapPin, Phone, Mail, Shield, Users, Target, Code2, Smartphone } from 'lucide-react'
+import { MUNICIPALITY_NAME, PLATFORM_NAME, CITY_CENTER, CITY_NAME, DEVELOPER_NAME, DEVELOPER_PHONE } from '@/lib/constants'
 import MapView from '@/components/map/Map'
 
 export default function About() {
@@ -152,6 +152,26 @@ export default function About() {
           </p>
         </div>
       </div>
+
+      {/* مطور المنصة */}
+      <section className="overflow-hidden rounded-card bg-gradient-to-br from-brand via-brand to-emerald-900 p-8 text-center text-white md:p-12">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-gold text-ink shadow-lg">
+          <Code2 className="h-8 w-8" />
+        </div>
+        <p className="text-sm font-bold tracking-widest text-gold">مطور المنصة</p>
+        <h3 className="mt-3 text-3xl font-black md:text-4xl">{DEVELOPER_NAME}</h3>
+        <p className="mx-auto mt-4 max-w-xl leading-relaxed text-white/85">
+          هندسة وتطوير وتصميم هذه المنصة على يد المطور {DEVELOPER_NAME}،
+          لخدمة أهالي مدينة طيبة الإمام وربطهم بالإدارة البلدية بسهولة وشفافية.
+        </p>
+        <a
+          href={`tel:${DEVELOPER_PHONE}`}
+          className="mt-8 inline-flex items-center justify-center gap-3 rounded-full bg-white px-8 py-3 font-black text-brand shadow-lg transition hover:bg-gold"
+        >
+          <Smartphone className="h-5 w-5" />
+          <span dir="ltr">{DEVELOPER_PHONE}</span>
+        </a>
+      </section>
 
       {/* الحقوق */}
       <div className="rounded-card bg-surface p-6 text-center">

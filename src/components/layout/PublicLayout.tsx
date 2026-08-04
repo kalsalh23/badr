@@ -1,6 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
-import { FileText, Landmark, LayoutDashboard, MapPin, Shield, Info } from 'lucide-react'
-import { MUNICIPALITY_NAME, PLATFORM_NAME } from '@/lib/constants'
+import { FileText, Landmark, LayoutDashboard, MapPin, Shield, Info, Code2 } from 'lucide-react'
+import { MUNICIPALITY_NAME, PLATFORM_NAME, DEVELOPER_NAME, DEVELOPER_PHONE } from '@/lib/constants'
 
 const navItems = [
   { to: '/', label: 'الرئيسية', icon: Landmark, end: true },
@@ -90,6 +90,15 @@ export default function PublicLayout() {
               <p className="flex items-center justify-center gap-2 md:justify-start">
                 <Shield className="h-4 w-4 text-gold" />
                 جميع الحقوق محفوظة © {new Date().getFullYear()}
+              </p>
+              <p className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+                <span className="inline-flex items-center gap-1 font-bold text-ink">
+                  <Code2 className="h-4 w-4 text-brand" />
+                  تطوير المنصة: {DEVELOPER_NAME}
+                </span>
+                <a href={`tel:${DEVELOPER_PHONE}`} dir="ltr" className="font-bold text-brand hover:text-brand-hover">
+                  {DEVELOPER_PHONE}
+                </a>
               </p>
             </div>
           </div>
