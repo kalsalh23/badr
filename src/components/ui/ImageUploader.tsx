@@ -8,6 +8,71 @@ interface Props {
   hint?: string
 }
 
+const MAX_DIM = 1200
+const TARGET_BYTES = 200 * 1024
+const QUALITY_STEPS = [0.6, 0.45, 0.3, 0.2]
+
+function readAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error('تعذر قراءة الصورة'))
+    img.src = src
+  })
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, type, quality))
+}
+
+async function compressImage(file: File): Promise<File> {
+  try {
+    const dataUrl = await readAsDataURL(file)
+    const img = await loadImage(dataUrl)
+
+    let { width, height } = img
+    const scale = Math.min(1, MAX_DIM / Math.max(width, height))
+    width = Math.max(1, Math.round(width * scale))
+    height = Math.max(1, Math.round(height * scale))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(img, 0, 0, width, height)
+
+    let blob = (await canvasToBlob(canvas, 'image/webp', 0.7)) || (await canvasToBlob(canvas, 'image/jpeg', 0.8))
+    if (!blob) return file
+
+    for (const q of QUALITY_STEPS) {
+      if (blob.size <= TARGET_BYTES) break
+      const next = await canvasToBlob(canvas, blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/webp', q)
+      if (!next || next.size >= blob.size) break
+      blob = next
+    }
+
+    const ext = blob.type === 'image/jpeg' ? 'jpg' : 'webp'
+    const name = (file.name.replace(/\.[^.]+$/, '') || 'image') + '.' + ext
+    return new File([blob], name, { type: blob.type })
+  } catch {
+    return file
+  }
+}
+
 export default function ImageUploader({ files, setFiles, title, hint }: Props) {
   const [previews, setPreviews] = useState<string[]>([])
 
@@ -17,9 +82,11 @@ export default function ImageUploader({ files, setFiles, title, hint }: Props) {
     return () => urls.forEach((u) => URL.revokeObjectURL(u))
   }, [files])
 
-  function handleAdd(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleAdd(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files || [])
-    setFiles([...files, ...selected].slice(0, 5))
+    if (!selected.length) return
+    const compressed = await Promise.all(selected.map(compressImage))
+    setFiles([...files, ...compressed].slice(0, 5))
     e.target.value = ''
   }
 
@@ -31,7 +98,7 @@ export default function ImageUploader({ files, setFiles, title, hint }: Props) {
     <div>
       <label className="label">{title || 'صور البلاغ (اختياري)'}</label>
       <p className="-mt-2 mb-3 text-xs text-ink-muted">
-        {hint || 'يمكنك رفع ما يصل إلى 5 صور. يتم ضغط الصور تلقائياً قبل الرفع.'}
+        {hint || 'تُضغط الصور تلقائياً إلى أصغر حجم ممكن قبل الرفع.'}
       </p>
 
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
