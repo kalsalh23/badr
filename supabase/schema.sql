@@ -261,11 +261,11 @@ stable
 as $$
   select jsonb_build_object(
     'total', (select count(*) from public."Reports"),
-    'new', (select count(*) from public."Reports" where "ReportStatus".slug = 'new'),
-    'in_progress', (select count(*) from public."Reports" where "ReportStatus".slug in ('in_review','in_progress')),
-    'completed', (select count(*) from public."Reports" where "ReportStatus".slug = 'completed'),
-    'closed', (select count(*) from public."Reports" where "ReportStatus".slug = 'closed'),
-    'avg_resolution_days', (select round(coalesce(avg(extract(epoch from (resolved_at - created_at)) / 86400.0), 0)::numeric, 1) from public."Reports" where resolved_at is not null)
+    'new', (select count(*) from public."Reports" r join public."ReportStatus" s on s.id = r.status_id where s.slug = 'new'),
+    'in_progress', (select count(*) from public."Reports" r join public."ReportStatus" s on s.id = r.status_id where s.slug in ('in_review','in_progress')),
+    'completed', (select count(*) from public."Reports" r join public."ReportStatus" s on s.id = r.status_id where s.slug = 'completed'),
+    'closed', (select count(*) from public."Reports" r join public."ReportStatus" s on s.id = r.status_id where s.slug = 'closed'),
+    'avg_resolution_days', (select round(coalesce(avg(extract(epoch from (r.resolved_at - r.created_at)) / 86400.0), 0)::numeric, 1) from public."Reports" r where r.resolved_at is not null)
   );
 $$;
 
@@ -324,16 +324,22 @@ declare
   v_attachments jsonb;
   v_latest_update jsonb;
 begin
-  select r.*, t.name, s.name, s.slug into v_report, v_type, v_status, v_status_slug
+  select r.* into v_report
   from public."Reports" r
-  join public."ReportTypes" t on t.id = r.type_id
-  join public."ReportStatus" s on s.id = r.status_id
   where r.report_number = p_report_number
   limit 1;
 
   if not found then
     return jsonb_build_object('found', false, 'message', 'رقم البلاغ غير موجود');
   end if;
+
+  select t.name into v_type
+  from public."ReportTypes" t
+  where t.id = v_report.type_id;
+
+  select s.name, s.slug into v_status, v_status_slug
+  from public."ReportStatus" s
+  where s.id = v_report.status_id;
 
   -- التحقق من مطابقة رقم الهاتف
   if v_report.citizen_phone <> p_phone then

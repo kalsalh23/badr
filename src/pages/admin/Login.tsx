@@ -74,8 +74,9 @@ export default function Login() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <Input
               label="البريد الإلكتروني"
-              placeholder="admin@badr.com"
+              placeholder=" "
               dir="ltr"
+              autoComplete="off"
               {...register('email')}
               error={errors.email?.message}
             />
