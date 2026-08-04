@@ -8,14 +8,9 @@ import type {
 } from '@/types'
 
 export async function fetchReportTypes(): Promise<ReportType[]> {
-  const { data, error } = await supabase
-    .from('ReportTypes')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
-
+  const { data, error } = await supabase.rpc('get_report_types')
   if (error) throw error
-  return data ?? []
+  return (data ?? []) as ReportType[]
 }
 
 export async function fetchPublicStats(): Promise<PublicStats> {

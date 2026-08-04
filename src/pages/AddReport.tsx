@@ -18,6 +18,8 @@ import { compressMultiple } from '@/utils/compressImage'
 
 export default function AddReport() {
   const [types, setTypes] = useState<ReportType[]>([])
+  const [typesLoading, setTypesLoading] = useState(true)
+  const [typesError, setTypesError] = useState('')
   const [files, setFiles] = useState<File[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -39,9 +41,27 @@ export default function AddReport() {
   const lng = watch('lng')
 
   useEffect(() => {
+    let mounted = true
     fetchReportTypes()
-      .then(setTypes)
-      .catch(() => {})
+      .then((list) => {
+        if (!mounted) return
+        setTypes(list)
+        if (list.length === 0) {
+          setTypesError('لم يتم العثور على أنواع بلاغات في قاعدة البيانات. تأكد من تنفيذ بيانات البذور في supabase/schema.sql.')
+        }
+      })
+      .catch((err) => {
+        if (!mounted) return
+        setTypesError(
+          err instanceof Error && err.message
+            ? `تعذر تحميل أنواع البلاغات: ${err.message}`
+            : 'تعذر تحميل أنواع البلاغات. تأكد من تنفيذ مخطط قاعدة البيانات (schema.sql).'
+        )
+      })
+      .finally(() => mounted && setTypesLoading(false))
+    return () => {
+      mounted = false
+    }
   }, [])
 
   // استعادة الموقع الحالي
@@ -183,6 +203,17 @@ export default function AddReport() {
                 </option>
               ))}
             </Select>
+            {typesLoading && (
+              <p className="mt-1 flex items-center gap-2 text-sm text-ink-secondary">
+                <Spinner className="h-4 w-4" />
+                جاري تحميل أنواع البلاغات...
+              </p>
+            )}
+            {typesError && (
+              <div className="mt-2">
+                <Alert tone="error">{typesError}</Alert>
+              </div>
+            )}
           </div>
           <div className="mt-5">
             <Input

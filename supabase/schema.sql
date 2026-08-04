@@ -473,6 +473,29 @@ $$;
 
 grant execute on function public.add_attachment(uuid, text, text, text) to anon, authenticated;
 
+-- جلب أنواع البلاغات النشطة (لإظهار قائمة "نوع البلاغ" بشكل موثوق)
+create or replace function public.get_report_types()
+returns table (
+  id uuid,
+  name text,
+  slug text,
+  icon text,
+  sort_order int,
+  is_active boolean
+)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select t.id, t.name, t.slug, t.icon, t.sort_order, t.is_active
+  from public."ReportTypes" t
+  where t.is_active = true
+  order by t.sort_order asc;
+$$;
+
+grant execute on function public.get_report_types() to anon, authenticated;
+
 -- ============================================================
 -- Storage: إنشاء دلو الصور
 -- ============================================================
