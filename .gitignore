@@ -32,3 +32,5 @@ pnpm-debug.log*
 
 # Verce
 .vercel/dist.zip
+.vercel
+.env*
