@@ -40,11 +40,10 @@ export async function trackReport(
 export interface CreateReportPayload {
   citizen_name: string
   citizen_phone: string
-  citizen_id?: string | null
   type_id: string
   title: string
   description: string
-  street?: string | null
+  severity: string
   neighborhood?: string | null
   landmark?: string | null
   lat: number
@@ -57,11 +56,10 @@ export async function createReport(payload: CreateReportPayload) {
   const { data, error } = await supabase.rpc('submit_report', {
     p_citizen_name: payload.citizen_name,
     p_citizen_phone: payload.citizen_phone,
-    p_citizen_id: payload.citizen_id ?? null,
     p_type_id: payload.type_id,
     p_title: payload.title,
     p_description: payload.description,
-    p_street: payload.street ?? null,
+    p_severity: payload.severity,
     p_neighborhood: payload.neighborhood ?? null,
     p_landmark: payload.landmark ?? null,
     p_lat: payload.lat,

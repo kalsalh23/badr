@@ -132,12 +132,6 @@ export default function TrackReport() {
                   <dt className="text-ink-secondary">درجة الخطورة</dt>
                   <dd className="font-bold">{report.severity}</dd>
                 </div>
-                {report.street && (
-                  <div className="flex justify-between">
-                    <dt className="text-ink-secondary">الشارع</dt>
-                    <dd className="font-bold">{report.street}</dd>
-                  </div>
-                )}
                 {report.neighborhood && (
                   <div className="flex justify-between">
                     <dt className="text-ink-secondary">الحي</dt>

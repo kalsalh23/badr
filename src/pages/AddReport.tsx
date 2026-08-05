@@ -93,11 +93,10 @@ export default function AddReport() {
       const payload = {
         citizen_name: values.citizen_name,
         citizen_phone: values.citizen_phone,
-        citizen_id: values.citizen_id || null,
         type_id: values.type_id,
         title: values.title,
         description: values.description,
-        street: values.street || null,
+        severity: values.severity,
         neighborhood: values.neighborhood || null,
         landmark: values.landmark || null,
         lat: values.lat,
@@ -178,13 +177,6 @@ export default function AddReport() {
               {...register('citizen_phone')}
               error={errors.citizen_phone?.message}
             />
-            <Input
-              label="رقم الهوية (اختياري)"
-              placeholder="الرقم الوطني"
-              dir="ltr"
-              {...register('citizen_id')}
-              error={errors.citizen_id?.message}
-            />
           </div>
         </Card>
 
@@ -202,6 +194,16 @@ export default function AddReport() {
                   {t.name}
                 </option>
               ))}
+            </Select>
+            <Select
+              label="درجة الخطورة *"
+              {...register('severity')}
+              error={errors.severity?.message}
+            >
+              <option value="">اختر درجة الخطورة...</option>
+              <option value="مرتفعة">مرتفعة</option>
+              <option value="متوسطة">متوسطة</option>
+              <option value="منخفضة">منخفضة</option>
             </Select>
             {typesLoading && (
               <p className="mt-1 flex items-center gap-2 text-sm text-ink-secondary">
@@ -271,8 +273,7 @@ export default function AddReport() {
             </p>
           )}
 
-          <div className="mt-5 grid gap-5 md:grid-cols-3">
-            <Input label="اسم الشارع" placeholder="شارع..." {...register('street')} />
+          <div className="mt-5 grid gap-5 md:grid-cols-2">
             <Input label="الحي" placeholder="الحي..." {...register('neighborhood')} />
             <Input label="أقرب معلم" placeholder="معلم قريب..." {...register('landmark')} />
           </div>

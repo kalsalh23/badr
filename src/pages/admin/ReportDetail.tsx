@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Clock, ImagePlus, Phone, Save, Trash2, User } from 'lucide-react'
+import { ArrowRight, Clock, ImagePlus, Phone, Save, Trash2, User, X } from 'lucide-react'
 import {
   fetchReportById,
   fetchReportAttachments,
@@ -40,6 +40,7 @@ export default function ReportDetail() {
   const [afterFiles, setAfterFiles] = useState<File[]>([])
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
 
   useEffect(() => {
     Promise.all([
@@ -200,25 +201,13 @@ export default function ReportDetail() {
               </div>
             </dl>
 
-            {report.citizen_id && (
-              <p className="mt-4 text-sm text-ink-secondary">
-                رقم الهوية: <span className="font-bold" dir="ltr">{report.citizen_id}</span>
-              </p>
-            )}
-
             <div className="mt-5">
               <p className="label">وصف البلاغ</p>
               <p className="leading-relaxed text-ink-secondary">{report.description}</p>
             </div>
 
-            {(report.street || report.neighborhood || report.landmark) && (
-              <div className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
-                {report.street && (
-                  <div className="rounded-xl bg-surface/60 p-3">
-                    <dt className="text-xs text-ink-secondary">الشارع</dt>
-                    <dd className="font-bold">{report.street}</dd>
-                  </div>
-                )}
+            {(report.neighborhood || report.landmark) && (
+              <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2">
                 {report.neighborhood && (
                   <div className="rounded-xl bg-surface/60 p-3">
                     <dt className="text-xs text-ink-secondary">الحي</dt>
@@ -241,11 +230,18 @@ export default function ReportDetail() {
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {beforeImages.map((a) => (
                   <div key={a.id} className="relative">
-                    <img
-                      src={a.url}
-                      alt="صورة البلاغ"
-                      className="aspect-square w-full rounded-card object-cover"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewUrl(a.url)}
+                      className="block w-full cursor-zoom-in overflow-hidden rounded-card"
+                      aria-label="عرض الصورة"
+                    >
+                      <img
+                        src={a.url}
+                        alt="صورة البلاغ"
+                        className="aspect-square w-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </button>
                     <button
                       onClick={() => handleDeleteAttachment(a)}
                       className="absolute left-2 top-2 rounded-full bg-error p-1.5 text-white"
@@ -267,11 +263,18 @@ export default function ReportDetail() {
               <div className="mb-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {afterImages.map((a) => (
                   <div key={a.id} className="relative">
-                    <img
-                      src={a.url}
-                      alt="صورة بعد الإصلاح"
-                      className="aspect-square w-full rounded-card object-cover"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setPreviewUrl(a.url)}
+                      className="block w-full cursor-zoom-in overflow-hidden rounded-card"
+                      aria-label="عرض الصورة"
+                    >
+                      <img
+                        src={a.url}
+                        alt="صورة بعد الإصلاح"
+                        className="aspect-square w-full object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </button>
                     <button
                       onClick={() => handleDeleteAttachment(a)}
                       className="absolute left-2 top-2 rounded-full bg-error p-1.5 text-white"
@@ -373,6 +376,28 @@ export default function ReportDetail() {
           </Card>
         </div>
       </div>
+
+      {previewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setPreviewUrl('')}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewUrl('')}
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            aria-label="إغلاق"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={previewUrl}
+            alt="عرض مكبّر"
+            className="max-h-[90vh] max-w-[90vw] rounded-card object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }

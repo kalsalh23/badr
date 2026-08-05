@@ -20,11 +20,9 @@ export interface Report {
   report_number: string
   citizen_name: string
   citizen_phone: string
-  citizen_id?: string | null
   type_id: string
   title: string
   description: string
-  street?: string | null
   neighborhood?: string | null
   landmark?: string | null
   lat: number
@@ -63,17 +61,16 @@ export interface ReportUpdate {
 export interface CitizenData {
   citizen_name: string
   citizen_phone: string
-  citizen_id?: string
 }
 
 export interface ReportDetails {
   type_id: string
   title: string
   description: string
+  severity: Severity
 }
 
 export interface LocationData {
-  street?: string
   neighborhood?: string
   landmark?: string
   lat: number
@@ -85,16 +82,14 @@ export type Severity = 'مرتفعة' | 'متوسطة' | 'منخفضة'
 export interface ReportFormValues {
   citizen_name: string
   citizen_phone: string
-  citizen_id?: string
   type_id: string
   title: string
   description: string
-  street?: string
+  severity: Severity
   neighborhood?: string
   landmark?: string
   lat: number | null
   lng: number | null
-  severity: Severity
 }
 
 export interface PublicStats {
@@ -131,7 +126,6 @@ export interface TrackResult {
     status: string
     status_slug: string
     severity: string
-    street?: string | null
     neighborhood?: string | null
     landmark?: string | null
     lat: number

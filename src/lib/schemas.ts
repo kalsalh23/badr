@@ -9,14 +9,15 @@ export const reportFormSchema = z.object({
   citizen_phone: z
     .string({ required_error: 'الرجاء إدخال رقم الهاتف' })
     .regex(PHONE_REGEX, 'الرجاء إدخال رقم هاتف سوري صحيح (مثال: 09xxxxxxxx)'),
-  citizen_id: z.string().optional(),
   type_id: z.string({ required_error: 'الرجاء اختيار نوع البلاغ' }).min(1, 'الرجاء اختيار نوع البلاغ'),
   title: z.string({ required_error: 'الرجاء إدخال عنوان البلاغ' }).min(5, 'العنوان قصير جداً').max(80, 'العنوان طويل جداً'),
   description: z
     .string({ required_error: 'الرجاء كتابة وصف البلاغ' })
     .min(10, 'الرجاء كتابة وصف أوضح للبلاغ')
     .max(2000, 'الوصف طويل جداً'),
-  street: z.string().optional(),
+  severity: z.enum(['مرتفعة', 'متوسطة', 'منخفضة'], {
+    required_error: 'الرجاء اختيار درجة الخطورة',
+  }),
   neighborhood: z.string().optional(),
   landmark: z.string().optional(),
   lat: z

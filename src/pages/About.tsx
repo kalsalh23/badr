@@ -1,8 +1,32 @@
+import { useEffect, useState } from 'react'
 import { Landmark, MapPin, Phone, Mail, Shield, Users, Target, Code2, Smartphone } from 'lucide-react'
 import { MUNICIPALITY_NAME, PLATFORM_NAME, CITY_CENTER, CITY_NAME, DEVELOPER_NAME, DEVELOPER_PHONE } from '@/lib/constants'
+import { fetchSystemSettings } from '@/services/adminService'
 import MapView from '@/components/map/Map'
 
 export default function About() {
+  const [contact, setContact] = useState({
+    phone: '+963 33 XXXXXX',
+    email: 'info@taybet.gov.sy',
+    address: `${CITY_NAME} — محافظة حماة، سوريا`,
+  })
+
+  useEffect(() => {
+    let mounted = true
+    fetchSystemSettings()
+      .then((s) => {
+        if (!mounted) return
+        setContact((prev) => ({
+          phone: s.phone || prev.phone,
+          email: s.email || prev.email,
+          address: s.address || prev.address,
+        }))
+      })
+      .catch(() => {})
+    return () => {
+      mounted = false
+    }
+  }, [])
   return (
     <div className="space-y-12">
       {/* العنوان */}
@@ -113,7 +137,7 @@ export default function About() {
                 <MapPin className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-bold">{CITY_NAME}</p>
+                <p className="font-bold">{contact.address}</p>
                 <p className="text-sm text-ink-secondary">محافظة حماة، سوريا</p>
               </div>
             </div>
@@ -122,7 +146,7 @@ export default function About() {
                 <Phone className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-bold" dir="ltr">+963 33 XXXXXX</p>
+                <p className="font-bold" dir="ltr">{contact.phone}</p>
                 <p className="text-sm text-ink-secondary">ساعات العمل: ٨ صباحاً - ٤ عصراً</p>
               </div>
             </div>
@@ -131,7 +155,7 @@ export default function About() {
                 <Mail className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-bold" dir="ltr">info@taybet.gov.sy</p>
+                <p className="font-bold" dir="ltr">{contact.email}</p>
                 <p className="text-sm text-ink-secondary">للاستفسارات والاقتراحات</p>
               </div>
             </div>

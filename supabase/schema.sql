@@ -36,11 +36,9 @@ create table if not exists public."Reports" (
   report_number text not null unique,
   citizen_name text not null,
   citizen_phone text not null,
-  citizen_id text,
   type_id uuid not null references public."ReportTypes"(id),
   title text not null,
   description text not null,
-  street text,
   neighborhood text,
   landmark text,
   lat double precision not null,
@@ -375,7 +373,6 @@ begin
       'status', v_status,
       'status_slug', v_status_slug,
       'severity', v_report.severity,
-      'street', v_report.street,
       'neighborhood', v_report.neighborhood,
       'landmark', v_report.landmark,
       'lat', v_report.lat,
@@ -402,15 +399,14 @@ grant execute on function public.public_track_report(text, text) to anon, authen
 create or replace function public.submit_report(
   p_citizen_name text,
   p_citizen_phone text,
-  p_citizen_id text,
   p_type_id uuid,
   p_title text,
   p_description text,
-  p_street text,
   p_neighborhood text,
   p_landmark text,
   p_lat double precision,
-  p_lng double precision
+  p_lng double precision,
+  p_severity text default 'منخفضة'
 )
 returns jsonb
 language plpgsql
@@ -421,7 +417,12 @@ declare
   v_status_id uuid;
   v_id uuid;
   v_report_number text;
+  v_severity text := coalesce(p_severity, 'منخفضة');
 begin
+  if v_severity not in ('مرتفعة', 'متوسطة', 'منخفضة') then
+    v_severity := 'منخفضة';
+  end if;
+
   select id into v_status_id from public."ReportStatus" where slug = 'new' limit 1;
 
   if v_status_id is null then
@@ -429,13 +430,13 @@ begin
   end if;
 
   insert into public."Reports" (
-    citizen_name, citizen_phone, citizen_id, type_id, status_id,
-    title, description, street, neighborhood, landmark,
+    citizen_name, citizen_phone, type_id, status_id,
+    title, description, neighborhood, landmark,
     lat, lng, severity, notes, is_resolved
   ) values (
-    p_citizen_name, p_citizen_phone, p_citizen_id, p_type_id, v_status_id,
-    p_title, p_description, p_street, p_neighborhood, p_landmark,
-    p_lat, p_lng, 'منخفضة', null, false
+    p_citizen_name, p_citizen_phone, p_type_id, v_status_id,
+    p_title, p_description, p_neighborhood, p_landmark,
+    p_lat, p_lng, v_severity, null, false
   )
   returning id, report_number into v_id, v_report_number;
 
@@ -443,7 +444,7 @@ begin
 end;
 $$;
 
-grant execute on function public.submit_report(text, text, text, uuid, text, text, text, text, text, double precision, double precision) to anon, authenticated;
+grant execute on function public.submit_report(text, text, uuid, text, text, text, text, double precision, double precision, text) to anon, authenticated;
 
 -- إضافة مرفق (صورة) إلى بلاغ معيّن وإرجاعه
 create or replace function public.add_attachment(
@@ -520,6 +521,17 @@ on public."SystemSettings" for all
 to authenticated
 using (public.is_admin())
 with check (public.is_admin());
+
+-- قراءة عامة لمعلومات الاتصال (صفحة "من نحن")
+drop policy if exists "SystemSettings public read" on public."SystemSettings";
+create policy "SystemSettings public read"
+on public."SystemSettings" for select
+to anon, authenticated
+using (true);
+
+-- ترحيل: إزالة حقلي الرقم الوطني واسم الشارع من البلاغات
+alter table public."Reports" drop column if exists citizen_id;
+alter table public."Reports" drop column if exists street;
 
 -- ============================================================
 -- إحصائيات لوحة التحكم (عدّادات دقيقة من الخادم)
